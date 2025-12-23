@@ -1,5 +1,5 @@
-import noteRouter from "./App/routes/noteRoutes";
-import express from "express";
+const noteRouter = require("./App/routes/noteRoutes");
+let express = require("express");
 let app = express();
 app.use(express.json());
 require("dotenv").config();
@@ -7,6 +7,7 @@ let mongoose = require("mongoose");
 let cors = require("cors");
 app.use(cors({ origin: "*" }));
 app.use("/api/website/notes", noteRouter);
+
 
 
 // connect to MongoDB
