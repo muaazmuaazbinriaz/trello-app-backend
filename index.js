@@ -6,6 +6,11 @@ require("dotenv").config();
 let mongoose = require("mongoose");
 let cors = require("cors");
 app.use(cors({ origin: "*" }));
+
+app.get("/health-check", (req, res) => {
+  res.status(200).send({ message: "Server is running" });
+});
+
 app.use("/api/website/notes", noteRouter);
 
 
