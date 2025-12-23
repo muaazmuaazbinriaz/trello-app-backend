@@ -5,7 +5,7 @@ app.use(express.json());
 require("dotenv").config();
 let mongoose = require("mongoose");
 let cors = require("cors");
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use("/api/website/notes", noteRouter);
 
 // connect to MongoDB
