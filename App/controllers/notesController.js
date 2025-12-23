@@ -1,6 +1,6 @@
 const Note = require("../models/notes.model");
 
-export const noteInsert = async (req, res) => {
+let noteInsert = async (req, res) => {
   try {
     const { title, body, createdAt, updatedAt } = req.body;
     const note = new Note({ title, body, createdAt, updatedAt });
@@ -11,7 +11,7 @@ export const noteInsert = async (req, res) => {
   }
 };
 
-export const getNotes = async (req, res) => {
+let getNotes = async (req, res) => {
   try {
     const allNotes = await Note.find();
     res.json(allNotes);
@@ -20,7 +20,7 @@ export const getNotes = async (req, res) => {
   }
 };
 
-export const deleteNote = async (req, res) => {
+let deleteNote = async (req, res) => {
   try {
     const { id } = req.params;
     const deletedNote = await Note.findByIdAndDelete(id);
@@ -35,7 +35,7 @@ export const deleteNote = async (req, res) => {
   }
 };
 
-export const updateNote = async (req, res) => {
+const updateNote = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, body } = req.body;
@@ -56,4 +56,4 @@ export const updateNote = async (req, res) => {
   }
 };
 
-
+module.exports = { noteInsert, getNotes, deleteNote, updateNote };

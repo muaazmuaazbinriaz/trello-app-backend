@@ -8,10 +8,6 @@ let cors = require("cors");
 app.use(cors({ origin: "*" }));
 app.use("/api/website/notes", noteRouter);
 
-app.get('/', (req, res) => {
-  res.json({ message: 'Hello from Express on Vercel!' });
-});
-
 
 // connect to MongoDB
 mongoose
