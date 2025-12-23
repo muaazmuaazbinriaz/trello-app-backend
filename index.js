@@ -1,5 +1,5 @@
-const noteRouter = require("./App/routes/noteRoutes");
-let express = require("express");
+import express from "express";
+const noteRouter = require("./routes/noteRoutes");
 let app = express();
 app.use(express.json());
 require("dotenv").config();

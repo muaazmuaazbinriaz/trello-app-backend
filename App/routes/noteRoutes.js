@@ -1,4 +1,6 @@
-let express = require("express");
+
+import express from "express";
+
 const {
   noteInsert,
   getNotes,
@@ -11,8 +13,6 @@ let noteRouter = express.Router();
 function hello(){
     console.log("hello");
 }
-
-
 
 noteRouter.get("/",  hello);
 noteRouter.post("/insert", noteInsert);
