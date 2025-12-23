@@ -12,10 +12,7 @@
  "routes": [
   {
    "src": "/(.*)",
-   "dest": "/",
-   "headers": {
-     "Cache-Control": "public, max-age=31536000, must-revalidate" 
-   }
+   "dest": "/"
   }
  ]
 }
