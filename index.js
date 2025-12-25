@@ -1,4 +1,3 @@
-// server/index.js
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
@@ -9,9 +8,21 @@ const userRouter = require("./App/routes/userRoutes");
 
 const app = express();
 
-// Middleware
+// ✅ Middleware
 app.use(express.json());
-app.use(cors({ origin: "*" })); // You can restrict origin later for security
+
+// ✅ Fix CORS: allow your frontend origin
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://notes-frontend-yourdomain.vercel.app",
+    ], // add your frontend domains
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
 // Health check
 app.get("/health-check", (req, res) => {
@@ -20,17 +31,17 @@ app.get("/health-check", (req, res) => {
 
 // Routes
 app.use("/api/website/notes", noteRouter);
-app.use("/api/website/users", userRouter); // ✅ Add this line for auth routes
+app.use("/api/website/users", userRouter);
 
-// Connect to MongoDB
+// Connect to MongoDB Atlas
 mongoose
   .connect(process.env.DBURL)
   .then(() => {
-    console.log("Connected to MongoDB");
-    app.listen(process.env.PORT || 3080, () => {
-      console.log(`Server is running on port ${process.env.PORT || 3080}`);
+    console.log("Connected to MongoDB Atlas");
+    app.listen(process.env.PORT || 8000, () => {
+      console.log(`Server is running on port ${process.env.PORT || 8000}`);
     });
   })
   .catch((err) => {
-    console.log("MongoDB connection error:", err);
+    console.error("MongoDB connection error:", err);
   });

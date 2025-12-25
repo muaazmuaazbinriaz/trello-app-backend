@@ -1,41 +1,53 @@
-import { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+const User = require("../models/user.model");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
-function Login() {
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const navigate = useNavigate();
+// Signup
+exports.signup = async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser)
+      return res.status(400).json({ message: "User already exists" });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/api/website/users/login`,
-        formData
-      );
-      localStorage.setItem("token", res.data.token);
-      alert("Login successful!");
-      navigate("/home"); // ✅ redirect after login
-    } catch (err) {
-      alert(err.response?.data?.message || "Login failed");
-    }
-  };
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <input name="email" placeholder="Email" onChange={handleChange} />
-      <input
-        name="password"
-        type="password"
-        placeholder="Password"
-        onChange={handleChange}
-      />
-      <button type="submit">Login</button>
-    </form>
-  );
-}
+    // Save user
+    const newUser = new User({ username, email, password: hashedPassword });
+    await newUser.save();
 
-export default Login;
+    res.status(201).json({ message: "Signup successful" });
+  } catch (error) {
+    console.error("Signup error:", error);
+    res.status(500).json({ message: "Signup failed", error });
+  }
+};
+
+// Login
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(401).json({ message: "Invalid credentials" });
+
+    // Create JWT
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.status(200).json({ message: "Login successful", token });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Login failed", error });
+  }
+};
