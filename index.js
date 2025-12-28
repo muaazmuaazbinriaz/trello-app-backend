@@ -20,10 +20,6 @@ app.use("/api/website/notes", noteRouter);
 app.use("/api/website/auth", authRouter);
 app.use("/api/website/products", productRouter);
 
-app.get("/", (req, res) => {
-  res.send("Backend is alive");
-});
-
 app.get("/health-check", (req, res) => {
   res.status(200).send({ message: "Server is running" });
 });
