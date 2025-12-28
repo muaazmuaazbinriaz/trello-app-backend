@@ -8,11 +8,9 @@ const {
   updateNote,
 } = require("../controllers/notesController");
 
-function hello() {
-  console.log("hello");
-}
-
-noteRouter.get("/", hello);
+noteRouter.get("/", (req, res) => {
+  res.send("Notes API root");
+});
 noteRouter.post("/insert", noteInsert);
 noteRouter.get("/getNotes", getNotes);
 noteRouter.delete("/deleteNote/:id", deleteNote);
