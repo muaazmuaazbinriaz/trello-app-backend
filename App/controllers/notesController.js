@@ -15,10 +15,10 @@ const noteInsert = async (req, res) => {
 
 const getNotes = async (req, res) => {
   try {
-    const notes = await Note.find({ userId: req.user._id });
-    res.json({ success: true, data: notes });
+    const userNotes = await Note.find({ userId: req.user._id });
+    res.json({ success: true, data: userNotes });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
