@@ -15,29 +15,25 @@ const noteInsert = async (req, res) => {
 
 const getNotes = async (req, res) => {
   try {
-    const userNotes = await Note.find({ userId: req.user._id });
-    res.json({ success: true, data: userNotes });
+    const notes = await Note.find({ userId: req.user._id });
+    res.json({ success: true, data: notes });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
 const deleteNote = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log("Attempting to delete note:", id, "for user:", req.user._id); // ✅ Add this
-
     const deletedNote = await Note.findOneAndDelete({
       _id: id,
       userId: req.user._id,
     });
-
     if (!deletedNote) {
       return res
         .status(404)
         .json({ success: false, message: "Note not found" });
     }
-
     res.json({ success: true, message: "Note deleted", data: deletedNote });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
