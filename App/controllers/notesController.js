@@ -25,15 +25,19 @@ const getNotes = async (req, res) => {
 const deleteNote = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log("Attempting to delete note:", id, "for user:", req.user._id); // ✅ Add this
+
     const deletedNote = await Note.findOneAndDelete({
       _id: id,
       userId: req.user._id,
     });
+
     if (!deletedNote) {
       return res
         .status(404)
         .json({ success: false, message: "Note not found" });
     }
+
     res.json({ success: true, message: "Note deleted", data: deletedNote });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
