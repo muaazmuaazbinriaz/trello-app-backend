@@ -27,6 +27,7 @@ const signup = async (req, res) => {
       success: true,
       message: "Signup successful",
       token,
+      _id: newUser._id,
       name: newUser.name,
       email: newUser.email,
     });
@@ -62,6 +63,7 @@ const login = async (req, res) => {
       success: true,
       message: "Login successful",
       token,
+      _id: user._id,
       name: user.name,
       email: user.email,
     });
