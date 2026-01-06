@@ -10,6 +10,7 @@ const noteInsert = async (req, res) => {
     const { title, body } = req.body;
     const note = new Note({ title, body, userId: req.user._id });
     const savedNote = await note.save();
+
     res
       .status(201)
       .json({ success: true, message: "Note added", data: savedNote });
