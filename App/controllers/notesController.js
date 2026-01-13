@@ -1,21 +1,20 @@
 const Note = require("../models/notes.model");
 
 const noteInsert = async (req, res) => {
-  if (req.body.title.length > 100) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Title exceeds 100 characters" });
-  }
   try {
-    const { title, body } = req.body;
+    const { title, body, listId } = req.body;
+    if (!listId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "listId is required" });
+    }
     const note = new Note({
       title,
       body,
       userId: req.user._id,
-      status: "task",
+      listId,
     });
     const savedNote = await note.save();
-
     res
       .status(201)
       .json({ success: true, message: "Note added", data: savedNote });
@@ -27,7 +26,6 @@ const noteInsert = async (req, res) => {
 const getNotes = async (req, res) => {
   try {
     const notes = await Note.find({ userId: req.user._id });
-
     res.json({
       success: true,
       data: notes,
@@ -91,30 +89,26 @@ const updateNote = async (req, res) => {
   }
 };
 
-const updateNoteStatus = async (req, res) => {
+const moveNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
-    if (!["task", "completed"].includes(status)) {
+    const { listId } = req.body;
+    if (!listId) {
       return res
         .status(400)
-        .json({ success: false, message: "Invalid status value" });
+        .json({ success: false, message: "listId is required" });
     }
-    const updatedTask = await Note.findOneAndUpdate(
-      {
-        _id: id,
-        userId: req.user._id,
-      },
-      { status, updatedAt: Date.now() },
+    const updatedNote = await Note.findOneAndUpdate(
+      { _id: id, userId: req.user._id },
+      { listId, updatedAt: Date.now() },
       { new: true }
     );
-
-    if (!updatedTask) {
+    if (!updatedNote) {
       return res
         .status(404)
         .json({ success: false, message: "Note not found" });
     }
-    res.json({ success: true, message: "Status updated", data: updatedTask });
+    res.json({ success: true, message: "Note moved", data: updatedNote });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -126,5 +120,5 @@ module.exports = {
   getNoteById,
   deleteNote,
   updateNote,
-  updateNoteStatus,
+  moveNote,
 };

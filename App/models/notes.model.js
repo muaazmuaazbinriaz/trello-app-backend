@@ -14,10 +14,9 @@ let noteSchema = new mongoose.Schema({
     ref: "users",
     required: true,
   },
-  status: {
-    type: String,
-    enum: ["task", "completed"],
-    default: "task",
+  listId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "lists",
     required: true,
   },
   createdAt: {

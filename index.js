@@ -6,6 +6,7 @@ const cors = require("cors");
 
 const noteRouter = require("./App/routes/noteRoutes");
 const authRouter = require("./App/routes/authRoutes");
+const listRouter = require("./App/routes/listRoutes");
 
 require("./App/config/db");
 
@@ -16,6 +17,7 @@ app.use(bodyParser.json());
 
 app.use("/api/website/notes", noteRouter);
 app.use("/api/website/auth", authRouter);
+app.use("/api/website/lists", listRouter);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Backend is alive" });
