@@ -1,6 +1,7 @@
 const UserModel = require("../models/user.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const listModel = require("../models/list.model");
 
 const signup = async (req, res) => {
   try {
@@ -16,6 +17,13 @@ const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new UserModel({ name, email, password: hashedPassword });
     await newUser.save();
+
+    const defaultTitles = ["Task", "Completed"];
+    await Promise.all(
+      defaultTitles.map((title) =>
+        new listModel({ title, userId: newUser._id }).save()
+      )
+    );
 
     const token = jwt.sign(
       { email: newUser.email, _id: newUser._id },
@@ -72,4 +80,15 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { signup, login };
+const logout = async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "Logout Successful",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+module.exports = { signup, login, logout };
