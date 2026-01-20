@@ -19,6 +19,10 @@ let noteSchema = new mongoose.Schema({
     ref: "lists",
     required: true,
   },
+  position: {
+    type: Number,
+    required: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

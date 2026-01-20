@@ -8,11 +8,13 @@ const noteInsert = async (req, res) => {
         .status(400)
         .json({ success: false, message: "listId is required" });
     }
+    const count = await Note.countDocuments({ listId, userId: req.user._id });
     const note = new Note({
       title,
       body,
       userId: req.user._id,
       listId,
+      position: count,
     });
     const savedNote = await note.save();
     res
@@ -76,7 +78,7 @@ const updateNote = async (req, res) => {
     const updatedNote = await Note.findOneAndUpdate(
       { _id: id, userId: req.user._id },
       { title, body, updatedAt: Date.now() },
-      { new: true }
+      { new: true },
     );
     if (!updatedNote) {
       return res
@@ -92,23 +94,27 @@ const updateNote = async (req, res) => {
 const moveNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const { listId } = req.body;
-    if (!listId) {
+    const { listId, position } = req.body;
+    if (!listId && position === undefined) {
       return res
         .status(400)
-        .json({ success: false, message: "listId is required" });
+        .json({ success: false, message: "listId and position are required" });
     }
-    const updatedNote = await Note.findOneAndUpdate(
-      { _id: id, userId: req.user._id },
-      { listId, updatedAt: Date.now() },
-      { new: true }
-    );
-    if (!updatedNote) {
+    const note = await Note.findOne({ _id: id, userId: req.user._id });
+    if (!note) {
       return res
         .status(404)
         .json({ success: false, message: "Note not found" });
     }
-    res.json({ success: true, message: "Note moved", data: updatedNote });
+    await Note.updateMany(
+      { listId, userId: req.user._id, position: { $gte: position } },
+      { $inc: { position: 1 } },
+    );
+    note.listId = listId;
+    note.position = position;
+    note.updatedAt = Date.now();
+    await note.save();
+    res.json({ success: true, message: "Note moved", data: note });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
