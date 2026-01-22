@@ -10,7 +10,7 @@ const listRouter = require("./App/routes/listRoutes");
 
 require("./App/config/db");
 
-app.use(cors());
+app.use(cors({ origin: "*" }));
 
 app.use(express.json());
 app.use(bodyParser.json());
@@ -24,8 +24,8 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-// app.listen(PORT, () => {
-//   console.log(`Server is running on port ${PORT}`);
-// });
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
-module.exports = app;
+// module.exports = app;
