@@ -91,6 +91,27 @@ const updateNote = async (req, res) => {
   }
 };
 
+const uploadImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).send("No file uploaded");
+    }
+    const { id } = req.params;
+    const note = await Note.findOne({ _id: id, userId: req.user._id });
+    if (!note) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Note not found" });
+    }
+    note.picture = req.file.path;
+    note.updatedAt = Date.now();
+    const updatedNote = await note.save();
+    res.json({ success: true, message: "Image uploaded", data: updatedNote });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 const moveNote = async (req, res) => {
   try {
     const { id } = req.params;
@@ -127,4 +148,5 @@ module.exports = {
   deleteNote,
   updateNote,
   moveNote,
+  uploadImage,
 };

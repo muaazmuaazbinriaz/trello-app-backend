@@ -23,6 +23,10 @@ let noteSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  picture: {
+    type: String,
+    default: "",
+  },
   createdAt: {
     type: Date,
     default: Date.now,
