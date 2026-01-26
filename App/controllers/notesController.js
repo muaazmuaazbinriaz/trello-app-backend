@@ -1,4 +1,6 @@
 const Note = require("../models/notes.model");
+const List = require("../models/list.model");
+const Board = require("../models/board.model");
 
 const noteInsert = async (req, res) => {
   try {
@@ -8,18 +10,32 @@ const noteInsert = async (req, res) => {
         .status(400)
         .json({ success: false, message: "listId is required" });
     }
-
-    const count = await Note.countDocuments({ listId, userId: req.user._id });
-
+    const list = await List.findById(listId);
+    if (!list)
+      return res
+        .status(404)
+        .json({ success: false, message: "List not found" });
+    const board = await Board.findById(list.boardId);
+    if (!board)
+      return res
+        .status(404)
+        .json({ success: false, message: "Board not found" });
+    const isAuthorized =
+      board.ownerId.toString() === req.user._id.toString() ||
+      board.members.includes(req.user._id);
+    if (!isAuthorized) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to add notes" });
+    }
+    const count = await Note.countDocuments({ listId });
     const note = new Note({
       title,
       body,
-      userId: req.user._id,
       listId,
       position: count,
       picture: req.file ? req.file.path : "",
     });
-
     const savedNote = await note.save();
     res
       .status(201)
@@ -31,11 +47,28 @@ const noteInsert = async (req, res) => {
 
 const getNotes = async (req, res) => {
   try {
-    const notes = await Note.find({ userId: req.user._id });
-    res.json({
-      success: true,
-      data: notes,
-    });
+    const { listId } = req.query;
+    if (!listId) return res.status(400).json({ message: "listId is required" });
+    const list = await List.findById(listId);
+    if (!list)
+      return res
+        .status(404)
+        .json({ success: false, message: "List not found" });
+    const board = await Board.findById(list.boardId);
+    if (!board)
+      return res
+        .status(404)
+        .json({ success: false, message: "Board not found" });
+    const isAuthorized =
+      board.ownerId.toString() === req.user._id.toString() ||
+      board.members.includes(req.user._id);
+    if (!isAuthorized) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to view notes" });
+    }
+    const notes = await Note.find({ listId }).sort({ position: 1 });
+    res.json({ success: true, data: notes });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -44,14 +77,22 @@ const getNotes = async (req, res) => {
 const getNoteById = async (req, res) => {
   try {
     const { id } = req.params;
-    const note = await Note.findOne({ _id: id, userId: req.user._id });
-    if (!note) {
+    const note = await Note.findById(id);
+    if (!note)
       return res
         .status(404)
         .json({ success: false, message: "Note not found" });
-    } else {
-      res.json({ success: true, data: note });
+    const list = await List.findById(note.listId);
+    const board = await Board.findById(list.boardId);
+    const isAuthorized =
+      board.ownerId.toString() === req.user._id.toString() ||
+      board.members.includes(req.user._id);
+    if (!isAuthorized) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to view note" });
     }
+    res.json({ success: true, data: note });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -60,16 +101,23 @@ const getNoteById = async (req, res) => {
 const deleteNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedNote = await Note.findOneAndDelete({
-      _id: id,
-      userId: req.user._id,
-    });
-    if (!deletedNote) {
+    const note = await Note.findById(id);
+    if (!note)
       return res
         .status(404)
         .json({ success: false, message: "Note not found" });
+    const list = await List.findById(note.listId);
+    const board = await Board.findById(list.boardId);
+    const isAuthorized =
+      board.ownerId.toString() === req.user._id.toString() ||
+      board.members.includes(req.user._id);
+    if (!isAuthorized) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to delete note" });
     }
-    res.json({ success: true, message: "Note deleted", data: deletedNote });
+    await note.deleteOne();
+    res.json({ success: true, message: "Note deleted", data: note });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -79,16 +127,25 @@ const updateNote = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, body } = req.body;
-    const updatedNote = await Note.findOneAndUpdate(
-      { _id: id, userId: req.user._id },
-      { title, body, updatedAt: Date.now() },
-      { new: true },
-    );
-    if (!updatedNote) {
+    const note = await Note.findById(id);
+    if (!note)
       return res
         .status(404)
         .json({ success: false, message: "Note not found" });
+    const list = await List.findById(note.listId);
+    const board = await Board.findById(list.boardId);
+    const isAuthorized =
+      board.ownerId.toString() === req.user._id.toString() ||
+      board.members.includes(req.user._id);
+    if (!isAuthorized) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to update note" });
     }
+    note.title = title;
+    note.body = body;
+    note.updatedAt = Date.now();
+    const updatedNote = await note.save();
     res.json({ success: true, message: "Note updated", data: updatedNote });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -97,15 +154,22 @@ const updateNote = async (req, res) => {
 
 const uploadImage = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).send("No file uploaded");
-    }
+    if (!req.file) return res.status(400).send("No file uploaded");
     const { id } = req.params;
-    const note = await Note.findOne({ _id: id, userId: req.user._id });
-    if (!note) {
+    const note = await Note.findById(id);
+    if (!note)
       return res
         .status(404)
         .json({ success: false, message: "Note not found" });
+    const list = await List.findById(note.listId);
+    const board = await Board.findById(list.boardId);
+    const isAuthorized =
+      board.ownerId.toString() === req.user._id.toString() ||
+      board.members.includes(req.user._id);
+    if (!isAuthorized) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to upload image" });
     }
     note.picture = req.file.path;
     note.updatedAt = Date.now();
@@ -120,19 +184,28 @@ const moveNote = async (req, res) => {
   try {
     const { id } = req.params;
     const { listId, position } = req.body;
-    if (!listId && position === undefined) {
+    if (!listId || position === undefined) {
       return res
         .status(400)
         .json({ success: false, message: "listId and position are required" });
     }
-    const note = await Note.findOne({ _id: id, userId: req.user._id });
-    if (!note) {
+    const note = await Note.findById(id);
+    if (!note)
       return res
         .status(404)
         .json({ success: false, message: "Note not found" });
+    const list = await List.findById(note.listId);
+    const board = await Board.findById(list.boardId);
+    const isAuthorized =
+      board.ownerId.toString() === req.user._id.toString() ||
+      board.members.includes(req.user._id);
+    if (!isAuthorized) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to move note" });
     }
     await Note.updateMany(
-      { listId, userId: req.user._id, position: { $gte: position } },
+      { listId, position: { $gte: position } },
       { $inc: { position: 1 } },
     );
     note.listId = listId;

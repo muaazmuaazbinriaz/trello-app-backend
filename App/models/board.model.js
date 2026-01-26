@@ -12,6 +12,9 @@ const boardSchema = new mongoose.Schema(
       ref: "users",
       required: true,
     },
+    members: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
+    },
   },
   {
     timestamps: true,
