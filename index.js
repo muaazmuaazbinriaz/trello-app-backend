@@ -14,7 +14,11 @@ require("./App/config/db");
 // app.use(cors({ origin: "*" }));
 app.use(
   cors({
-    origin: "https://notes-frontend-rouge.vercel.app/",
+    origin: [
+      "http://localhost:5173",
+      "https://notes-frontend-rouge.vercel.app",
+    ],
+    credentials: true,
   }),
 );
 
