@@ -40,4 +40,6 @@ const PORT = process.env.PORT || 3000;
 //   console.log(`Server is running on port ${PORT}`);
 // });
 
-module.exports = app;
+// module.exports = app;
+const serverless = require("serverless-http");
+module.exports = serverless(app);
