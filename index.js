@@ -11,16 +11,7 @@ const boardRouter = require("./App/routes/boardRoutes");
 
 require("./App/config/db");
 
-// app.use(cors({ origin: "*" }));
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://notes-frontend-rouge.vercel.app",
-    ],
-    credentials: true,
-  }),
-);
+app.use(cors({ origin: "*" }));
 
 app.use(express.json());
 app.use(bodyParser.json());
@@ -40,6 +31,4 @@ const PORT = process.env.PORT || 3000;
 //   console.log(`Server is running on port ${PORT}`);
 // });
 
-// module.exports = app;
-const serverless = require("serverless-http");
-module.exports = serverless(app);
+module.exports = app;
