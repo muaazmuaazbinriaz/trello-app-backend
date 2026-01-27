@@ -3,7 +3,6 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const cors = require("cors");
-// update
 const noteRouter = require("./App/routes/noteRoutes");
 const authRouter = require("./App/routes/authRoutes");
 const listRouter = require("./App/routes/listRoutes");
