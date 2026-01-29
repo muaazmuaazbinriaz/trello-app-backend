@@ -110,7 +110,7 @@ const inviteBoardMember = async (req, res) => {
     if (!isAuthorized) {
       return res.status(403).json({ message: "Not authorized" });
     }
-    await sendBoardInvite(email, board.title, req.user.name, boardId);
+    await sendBoardInvite(email, board.title, board._id.toString());
     res.status(200).json({ message: "Invitation sent successfully" });
   } catch (err) {
     console.error("Invite error:", err);
