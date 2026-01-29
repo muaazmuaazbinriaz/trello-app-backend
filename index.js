@@ -11,7 +11,6 @@ const boardRouter = require("./App/routes/boardRoutes");
 require("./App/config/db");
 
 app.use(cors({ origin: "*" }));
-// index
 app.use(express.json());
 app.use(bodyParser.json());
 
@@ -26,8 +25,8 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-// app.listen(PORT, () => {
-//   console.log(`Server is running on port ${PORT}`);
-// });
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
-module.exports = app;
+// module.exports = app;

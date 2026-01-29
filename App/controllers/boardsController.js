@@ -94,7 +94,6 @@ const getBoardById = async (req, res) => {
 //       .json({ message: "Failed to send invite", error: err.message });
 //   }
 // };
-
 const inviteBoardMember = async (req, res) => {
   try {
     const { email } = req.body;
@@ -106,11 +105,10 @@ const inviteBoardMember = async (req, res) => {
     const isAuthorized =
       board.ownerId.toString() === req.user._id.toString() ||
       board.members.includes(req.user._id);
-
     if (!isAuthorized) {
       return res.status(403).json({ message: "Not authorized" });
     }
-    await sendBoardInvite(email, board.title, board._id.toString());
+    await sendBoardInvite(email, board.title, req.user.name, boardId);
     res.status(200).json({ message: "Invitation sent successfully" });
   } catch (err) {
     console.error("Invite error:", err);
