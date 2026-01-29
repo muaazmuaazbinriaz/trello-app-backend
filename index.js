@@ -11,7 +11,7 @@ const boardRouter = require("./App/routes/boardRoutes");
 require("./App/config/db");
 
 app.use(cors({ origin: "*" }));
-
+// index
 app.use(express.json());
 app.use(bodyParser.json());
 
