@@ -49,35 +49,104 @@ const getBoards = async (req, res) => {
   }
 };
 
+// const getBoardById = async (req, res) => {
+//   try {
+//     const board = await boardModel
+//       .findById(req.params.id)
+//       .populate("ownerId", "name email")
+//       .populate("members", "name email");
+//     if (!board) return res.status(404).json({ message: "Board not found" });
+//     res.json({ success: true, data: board });
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 const getBoardById = async (req, res) => {
   try {
     const board = await boardModel
       .findById(req.params.id)
       .populate("ownerId", "name email")
       .populate("members", "name email");
-    if (!board) return res.status(404).json({ message: "Board not found" });
+
+    if (!board) {
+      return res.status(404).json({ message: "Board not found" });
+    }
+
+    // NEW: Check if user has access
+    const hasAccess =
+      board.ownerId._id.toString() === req.user._id.toString() ||
+      board.members.some((m) => m._id.toString() === req.user._id.toString());
+
+    if (!hasAccess) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     res.json({ success: true, data: board });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
+// const inviteBoardMember = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     const boardId = req.params.id;
+//     const board = await boardModel.findById(boardId);
+//     if (!board) {
+//       return res.status(404).json({ message: "Board not found" });
+//     }
+//     const isAuthorized =
+//       board.ownerId.toString() === req.user._id.toString() ||
+//       board.members.includes(req.user._id);
+//     if (!isAuthorized) {
+//       return res.status(403).json({ message: "Not authorized" });
+//     }
+//     await sendBoardInvite(email, board.title, req.user.name, boardId);
+//     res.status(200).json({ message: "Invitation sent successfully" });
+//   } catch (err) {
+//     console.error("Invite error:", err);
+//     res.status(500).json({ message: "Failed to send invite" });
+//   }
+// };
+
 const inviteBoardMember = async (req, res) => {
   try {
     const { email } = req.body;
     const boardId = req.params.id;
+
     const board = await boardModel.findById(boardId);
     if (!board) {
       return res.status(404).json({ message: "Board not found" });
     }
+
     const isAuthorized =
       board.ownerId.toString() === req.user._id.toString() ||
       board.members.includes(req.user._id);
     if (!isAuthorized) {
       return res.status(403).json({ message: "Not authorized" });
     }
+
+    // NEW: Check if invited user exists and add them to board
+    const invitedUser = await UserModel.findOne({ email: email.trim() });
+    if (invitedUser) {
+      // Check if already a member
+      const isAlreadyMember =
+        board.ownerId.toString() === invitedUser._id.toString() ||
+        board.members.some((m) => m.toString() === invitedUser._id.toString());
+
+      if (!isAlreadyMember) {
+        board.members.push(invitedUser._id);
+        await board.save();
+      }
+    }
+
+    // Send email
     await sendBoardInvite(email, board.title, req.user.name, boardId);
-    res.status(200).json({ message: "Invitation sent successfully" });
+
+    res.status(200).json({
+      success: true,
+      message: "Invitation sent successfully",
+    });
   } catch (err) {
     console.error("Invite error:", err);
     res.status(500).json({ message: "Failed to send invite" });
