@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
 });
-
+// update
 const sendBoardInvite = async (to, boardTitle, boardId) => {
   const inviteLink = `${process.env.FRONTEND_URL}/home/${boardId}`;
   await transporter.sendMail({
