@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-const Invite = require("../models/invite.model");
+import Invite from "../models/invite.model.js";
 exports.createInvite = async (req, res) => {
   try {
     const { boardId, email } = req.body;
