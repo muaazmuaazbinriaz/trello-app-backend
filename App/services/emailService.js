@@ -8,8 +8,8 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
 });
-const sendBoardInvite = async (to, boardTitle, boardId) => {
-  const inviteLink = `${process.env.FRONTEND_URL}/home/${boardId}`;
+const sendBoardInvite = async (to, boardTitle, inviteId) => {
+  const inviteLink = `${process.env.FRONTEND_URL}/signup?inviteId=${inviteId}`;
   await transporter.sendMail({
     from: `"MERN Notes App" <${process.env.SMTP_USER}>`,
     to,

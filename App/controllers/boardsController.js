@@ -1,6 +1,8 @@
 const boardModel = require("../models/board.model");
+const inviteModel = require("../models/invite.model");
 const UserModel = require("../models/user.model");
 const { sendBoardInvite } = require("../services/emailService");
+const { v4: uuidv4 } = require("uuid");
 
 const createBoard = async (req, res) => {
   try {
@@ -85,6 +87,10 @@ const inviteBoardMember = async (req, res) => {
     if (!isAuthorized) {
       return res.status(403).json({ message: "Not authorized" });
     }
+    const inviteId = uuidv4();
+    const invite = new inviteModel({ inviteId, boardId, email });
+    await invite.save();
+    await sendBoardInvite(email, board.title, inviteId);
     const invitedUser = await UserModel.findOne({ email: email.trim() });
     if (invitedUser) {
       const isAlreadyMember =
@@ -95,7 +101,6 @@ const inviteBoardMember = async (req, res) => {
         await board.save();
       }
     }
-    await sendBoardInvite(email, board.title, boardId);
     res.status(200).json({
       success: true,
       message: "Invitation sent successfully",
