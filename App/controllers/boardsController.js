@@ -73,138 +73,138 @@ const getBoardById = async (req, res) => {
   }
 };
 
-// const inviteBoardMember = async (req, res) => {
-//   try {
-//     const { email } = req.body;
-//     const boardId = req.params.id;
-//     const board = await boardModel.findById(boardId);
-//     if (!board) {
-//       return res.status(404).json({ message: "Board not found" });
-//     }
-
-//     const isOwner = board.ownerId.toString() === req.user._id.toString();
-//     const isMember = board.members.some(
-//       (memberId) => memberId.toString() === req.user._id.toString(),
-//     );
-//     const isAuthorized = isOwner || isMember;
-//     if (!isAuthorized) {
-//       return res.status(403).json({ message: "Not authorized" });
-//     }
-//     const inviteId = uuidv4();
-//     const invite = new inviteModel({ inviteId, boardId, email });
-//     await invite.save();
-//     await sendBoardInvite(email, board.title, inviteId);
-//     const invitedUser = await UserModel.findOne({ email: email.trim() });
-//     if (invitedUser) {
-//       const isAlreadyMember =
-//         board.ownerId.toString() === invitedUser._id.toString() ||
-//         board.members.some((m) => m.toString() === invitedUser._id.toString());
-//       if (!isAlreadyMember) {
-//         board.members.push(invitedUser._id);
-//         await board.save();
-//       }
-//     }
-//     res.status(200).json({
-//       success: true,
-//       message: "Invitation sent successfully",
-//     });
-//   } catch (err) {
-//     console.error("Invite error:", err);
-//     res.status(500).json({ message: "Failed to send invite" });
-//   }
-// };
-
 const inviteBoardMember = async (req, res) => {
   try {
     const { email } = req.body;
     const boardId = req.params.id;
-
-    // Validate email
-    if (!email || !email.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
-    }
-
-    // Find the board
     const board = await boardModel.findById(boardId);
-
     if (!board) {
-      return res.status(404).json({
-        success: false,
-        message: "Board not found",
-      });
+      return res.status(404).json({ message: "Board not found" });
     }
 
-    // SIMPLIFIED Authorization check - If you're the owner, you can invite
     const isOwner = board.ownerId.toString() === req.user._id.toString();
-
-    // Check if user is a member
     const isMember = board.members.some(
       (memberId) => memberId.toString() === req.user._id.toString(),
     );
-
-    // Allow both owner and members to invite
-    if (!isOwner && !isMember) {
-      return res.status(403).json({
-        success: false,
-        message: "You must be a member or owner of this board to invite others",
-        debug: {
-          boardOwnerId: board.ownerId.toString(),
-          requestingUserId: req.user._id.toString(),
-          isOwner,
-          isMember,
-          membersCount: board.members.length,
-        },
-      });
+    const isAuthorized = isOwner || isMember;
+    if (!isAuthorized) {
+      return res.status(403).json({ message: "Not authorized" });
     }
-
-    // Check if user is already a member or owner
+    const inviteId = uuidv4();
+    const invite = new inviteModel({ inviteId, boardId, email });
+    await invite.save();
+    await sendBoardInvite(email, board.title, inviteId);
     const invitedUser = await UserModel.findOne({ email: email.trim() });
-
     if (invitedUser) {
       const isAlreadyMember =
         board.ownerId.toString() === invitedUser._id.toString() ||
         board.members.some((m) => m.toString() === invitedUser._id.toString());
-
-      if (isAlreadyMember) {
-        return res.status(400).json({
-          success: false,
-          message: "User is already a member of this board",
-        });
+      if (!isAlreadyMember) {
+        board.members.push(invitedUser._id);
+        await board.save();
       }
     }
-
-    // Create invite
-    const inviteId = uuidv4();
-    const invite = new inviteModel({
-      inviteId,
-      boardId,
-      email: email.trim(),
-    });
-    await invite.save();
-
-    // Send email invite
-    try {
-      await sendBoardInvite(email.trim(), board.title, inviteId);
-    } catch (emailError) {
-      console.error("Email send failed:", emailError);
-      // Continue even if email fails
-    }
-
     res.status(200).json({
       success: true,
       message: "Invitation sent successfully",
-      inviteId,
     });
   } catch (err) {
     console.error("Invite error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to send invite",
-      error: err.message,
-    });
+    res.status(500).json({ message: "Failed to send invite" });
   }
 };
+
+// const inviteBoardMember = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     const boardId = req.params.id;
+
+//     // Validate email
+//     if (!email || !email.trim()) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Email is required",
+//       });
+//     }
+
+//     // Find the board
+//     const board = await boardModel.findById(boardId);
+
+//     if (!board) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Board not found",
+//       });
+//     }
+
+//     // SIMPLIFIED Authorization check - If you're the owner, you can invite
+//     const isOwner = board.ownerId.toString() === req.user._id.toString();
+
+//     // Check if user is a member
+//     const isMember = board.members.some(
+//       (memberId) => memberId.toString() === req.user._id.toString(),
+//     );
+
+//     // Allow both owner and members to invite
+//     if (!isOwner && !isMember) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "You must be a member or owner of this board to invite others",
+//         debug: {
+//           boardOwnerId: board.ownerId.toString(),
+//           requestingUserId: req.user._id.toString(),
+//           isOwner,
+//           isMember,
+//           membersCount: board.members.length,
+//         },
+//       });
+//     }
+
+//     // Check if user is already a member or owner
+//     const invitedUser = await UserModel.findOne({ email: email.trim() });
+
+//     if (invitedUser) {
+//       const isAlreadyMember =
+//         board.ownerId.toString() === invitedUser._id.toString() ||
+//         board.members.some((m) => m.toString() === invitedUser._id.toString());
+
+//       if (isAlreadyMember) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "User is already a member of this board",
+//         });
+//       }
+//     }
+
+//     // Create invite
+//     const inviteId = uuidv4();
+//     const invite = new inviteModel({
+//       inviteId,
+//       boardId,
+//       email: email.trim(),
+//     });
+//     await invite.save();
+
+//     // Send email invite
+//     try {
+//       await sendBoardInvite(email.trim(), board.title, inviteId);
+//     } catch (emailError) {
+//       console.error("Email send failed:", emailError);
+//       // Continue even if email fails
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Invitation sent successfully",
+//       inviteId,
+//     });
+//   } catch (err) {
+//     console.error("Invite error:", err);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to send invite",
+//       error: err.message,
+//     });
+//   }
+// };
 module.exports = { createBoard, getBoards, inviteBoardMember, getBoardById };
