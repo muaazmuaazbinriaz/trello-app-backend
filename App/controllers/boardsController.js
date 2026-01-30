@@ -121,26 +121,48 @@ const inviteBoardMember = async (req, res) => {
 
     // Validate email
     if (!email || !email.trim()) {
-      return res.status(400).json({ message: "Email is required" });
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
     }
 
+    // Find the board
     const board = await boardModel.findById(boardId);
+
     if (!board) {
-      return res.status(404).json({ message: "Board not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Board not found",
+      });
     }
 
-    // Check authorization
+    // SIMPLIFIED Authorization check - If you're the owner, you can invite
     const isOwner = board.ownerId.toString() === req.user._id.toString();
+
+    // Check if user is a member
     const isMember = board.members.some(
       (memberId) => memberId.toString() === req.user._id.toString(),
     );
-    const isAuthorized = isOwner || isMember;
-    if (!isAuthorized) {
-      return res.status(403).json({ message: "Not authorized" });
+
+    // Allow both owner and members to invite
+    if (!isOwner && !isMember) {
+      return res.status(403).json({
+        success: false,
+        message: "You must be a member or owner of this board to invite others",
+        debug: {
+          boardOwnerId: board.ownerId.toString(),
+          requestingUserId: req.user._id.toString(),
+          isOwner,
+          isMember,
+          membersCount: board.members.length,
+        },
+      });
     }
 
     // Check if user is already a member or owner
     const invitedUser = await UserModel.findOne({ email: email.trim() });
+
     if (invitedUser) {
       const isAlreadyMember =
         board.ownerId.toString() === invitedUser._id.toString() ||
@@ -164,18 +186,25 @@ const inviteBoardMember = async (req, res) => {
     await invite.save();
 
     // Send email invite
-    await sendBoardInvite(email.trim(), board.title, inviteId);
-
-    // REMOVED: Don't add user to board here - only add when they accept the invite
+    try {
+      await sendBoardInvite(email.trim(), board.title, inviteId);
+    } catch (emailError) {
+      console.error("Email send failed:", emailError);
+      // Continue even if email fails
+    }
 
     res.status(200).json({
       success: true,
       message: "Invitation sent successfully",
-      inviteId, // Return for testing purposes
+      inviteId,
     });
   } catch (err) {
     console.error("Invite error:", err);
-    res.status(500).json({ message: "Failed to send invite" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to send invite",
+      error: err.message,
+    });
   }
 };
 module.exports = { createBoard, getBoards, inviteBoardMember, getBoardById };
