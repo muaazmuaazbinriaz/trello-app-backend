@@ -18,20 +18,9 @@ const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new UserModel({ name, email, password: hashedPassword });
     await newUser.save();
-    // if (inviteId) {
-    //   const invite = await inviteModel.findOne({ inviteId, used: false });
-    //   if (invite) {
-    //     await boardModel.findByIdAndUpdate(invite.boardId, {
-    //       $push: { members: newUser._id },
-    //     });
-    //     invite.used = true;
-    //     await invite.save();
-    //   }
-    // }
     if (inviteId) {
       const invite = await inviteModel.findOne({ inviteId, used: false });
-      if (invite && invite.email === email) {
-        // <-- add this check
+      if (invite) {
         await boardModel.findByIdAndUpdate(invite.boardId, {
           $push: { members: newUser._id },
         });
@@ -39,7 +28,6 @@ const signup = async (req, res) => {
         await invite.save();
       }
     }
-
     const token = jwt.sign(
       { email: newUser.email, _id: newUser._id },
       process.env.JWT_SECRET,

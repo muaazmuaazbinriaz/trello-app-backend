@@ -1,11 +1,11 @@
 const { v4: uuidv4 } = require("uuid");
-const Invite = require("../models/invite.model");
 const boardModel = require("../models/board.model");
+const inviteModel = require("../models/invite.model");
 const createInvite = async (req, res) => {
   try {
     const { boardId, email } = req.body;
     const inviteId = uuidv4();
-    const invite = new Invite({
+    const invite = new inviteModel({
       inviteId,
       boardId,
       email,

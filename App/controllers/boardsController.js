@@ -94,16 +94,16 @@ const inviteBoardMember = async (req, res) => {
     const invite = new inviteModel({ inviteId, boardId, email });
     await invite.save();
     await sendBoardInvite(email, board.title, inviteId);
-    // const invitedUser = await UserModel.findOne({ email: email.trim() });
-    // if (invitedUser) {
-    //   const isAlreadyMember =
-    //     board.ownerId.toString() === invitedUser._id.toString() ||
-    //     board.members.some((m) => m.toString() === invitedUser._id.toString());
-    //   if (!isAlreadyMember) {
-    //     board.members.push(invitedUser._id);
-    //     await board.save();
-    //   }
-    // }
+    const invitedUser = await UserModel.findOne({ email: email.trim() });
+    if (invitedUser) {
+      const isAlreadyMember =
+        board.ownerId.toString() === invitedUser._id.toString() ||
+        board.members.some((m) => m.toString() === invitedUser._id.toString());
+      if (!isAlreadyMember) {
+        board.members.push(invitedUser._id);
+        await board.save();
+      }
+    }
     res.status(200).json({
       success: true,
       message: "Invitation sent successfully",
