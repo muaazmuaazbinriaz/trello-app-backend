@@ -24,6 +24,7 @@
 // module.exports = {
 //   sendBoardInvite,
 // };
+
 const nodemailer = require("nodemailer");
 const dotenv = require("dotenv");
 dotenv.config();
