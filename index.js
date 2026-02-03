@@ -16,8 +16,16 @@ app.use(express.json());
 app.use(bodyParser.json());
 
 app.use(async (req, res, next) => {
-  await connectDB();
-  next();
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("DB connection error in middleware:", error);
+    return res.status(503).json({
+      success: false,
+      message: "Database connection failed, please try again",
+    });
+  }
 });
 
 app.use("/api/auth", authRouter);
