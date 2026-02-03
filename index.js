@@ -8,7 +8,7 @@ const authRouter = require("./App/routes/authRoutes");
 const listRouter = require("./App/routes/listRoutes");
 const boardRouter = require("./App/routes/boardRoutes");
 const inviteRouter = require("./App/routes/inviteRoutes");
-// update
+
 require("./App/config/db");
 
 app.use(cors({ origin: "*" }));
