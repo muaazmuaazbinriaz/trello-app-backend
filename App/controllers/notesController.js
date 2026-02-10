@@ -1,10 +1,11 @@
 const Note = require("../models/notes.model");
 const List = require("../models/list.model");
 const Board = require("../models/board.model");
+const applyAutomation = require("../../helper/automation");
 
 const noteInsert = async (req, res) => {
   try {
-    const { title, listId } = req.body;
+    const { title, listId, tags } = req.body;
     if (!listId) {
       return res
         .status(400)
@@ -34,6 +35,7 @@ const noteInsert = async (req, res) => {
       listId: listId.toString(),
       position: count,
       picture: req.file ? req.file.path : "",
+      tags: tags || [],
     });
     const savedNote = await note.save();
     req.app.io.to(board._id.toString()).emit("note-created", {
@@ -133,7 +135,7 @@ const deleteNote = async (req, res) => {
 const updateNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, body, picture } = req.body;
+    const { title, body, picture, tags } = req.body;
     const note = await Note.findById(id);
     if (!note)
       return res
@@ -152,12 +154,14 @@ const updateNote = async (req, res) => {
     if (title !== undefined) note.title = title;
     if (body !== undefined) note.body = body;
     if (picture !== undefined) note.picture = picture;
+    if (tags !== undefined) note.tags = tags;
     note.updatedAt = Date.now();
     const updatedNote = await note.save();
     req.app.io.to(board._id.toString()).emit("note-updated", {
       ...updatedNote.toObject(),
       listId: list._id.toString(),
     });
+    await applyAutomation("tag-verified", updatedNote, req.app.io);
     res.json({ success: true, message: "Note updated", data: updatedNote });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

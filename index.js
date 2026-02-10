@@ -11,6 +11,7 @@ const boardRouter = require("./App/routes/boardRoutes");
 const inviteRouter = require("./App/routes/inviteRoutes");
 
 const connectDB = require("./App/config/db");
+const automationRouter = require("./App/routes/automationRoutes");
 app.use(cors({ origin: "*" }));
 
 const server = http.createServer(app);
@@ -34,6 +35,7 @@ app.use("/api/notes", noteRouter);
 app.use("/api/lists", listRouter);
 app.use("/api/boards", boardRouter);
 app.use("/api/invites", inviteRouter);
+app.use("/api/automation", automationRouter);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Backend is alive" });
@@ -44,3 +46,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+module.exports = app;
