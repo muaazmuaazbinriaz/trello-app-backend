@@ -151,6 +151,8 @@ const updateNote = async (req, res) => {
         .status(403)
         .json({ success: false, message: "Not authorized to update note" });
     }
+    const tagsChanged =
+      tags !== undefined && JSON.stringify(note.tags) !== JSON.stringify(tags);
     if (title !== undefined) note.title = title;
     if (body !== undefined) note.body = body;
     if (picture !== undefined) note.picture = picture;
@@ -161,7 +163,9 @@ const updateNote = async (req, res) => {
       ...updatedNote.toObject(),
       listId: list._id.toString(),
     });
-    await applyAutomation("tag-verified", updatedNote, req.app.io);
+    if (tagsChanged) {
+      await applyAutomation("tag-verified", updatedNote, req.app.io);
+    }
     res.json({ success: true, message: "Note updated", data: updatedNote });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
