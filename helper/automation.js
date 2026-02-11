@@ -8,43 +8,57 @@ const applyAutomation = async (trigger, note, io) => {
   try {
     const currentList = await listModel.findById(note.listId.toString());
     if (!currentList) return { moved };
+
     const rules = await AutomationRule.find({
       trigger,
       boardId: currentList.boardId,
     });
 
     const originalListId = note.listId.toString();
-    for (const rule of rules) {
-      const requiredTag =
-        rule.conditions instanceof Map
-          ? rule.conditions.get("tag")
-          : rule.conditions?.tag;
 
-      if (!requiredTag || !note.tags.includes(requiredTag)) continue;
+    for (const rule of rules) {
+      if (trigger === "tag-verified") {
+        const requiredTag =
+          rule.conditions instanceof Map
+            ? rule.conditions.get("tag")
+            : rule.conditions?.tag;
+
+        if (!requiredTag || !note.tags.includes(requiredTag)) continue;
+      }
 
       if (rule.action === "move") {
+        const escaped = rule.destination.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
         const destinationList = await listModel.findOne({
-          title: { $regex: new RegExp(`^${rule.destination}$`, "i") },
+          title: { $regex: new RegExp(`^${escaped}$`, "i") },
           boardId: currentList.boardId,
         });
 
-        if (!destinationList) continue;
-        if (originalListId === destinationList._id.toString()) continue;
+        if (!destinationList) {
+          console.log(`Destination list "${rule.destination}" not found`);
+          continue;
+        }
+        if (originalListId === destinationList._id.toString()) {
+          console.log("Note is already in destination list, skipping move");
+          continue;
+        }
 
         const notesInDestination = await Note.countDocuments({
           listId: destinationList._id,
         });
-
         const oldListId = originalListId;
         note.listId = destinationList._id;
         note.position = notesInDestination;
         await note.save();
         moved = true;
+
         io.to(currentList.boardId.toString()).emit("note-moved", {
           ...note.toObject(),
           oldListId,
           listId: note.listId.toString(),
         });
+
+        break;
       }
 
       if (rule.action === "sortBy") {
@@ -57,9 +71,19 @@ const applyAutomation = async (trigger, note, io) => {
               (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
             );
             break;
+          case "createdAtDesc":
+            sortedNotes = [...notesInList].sort(
+              (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+            );
+            break;
           case "name":
             sortedNotes = [...notesInList].sort((a, b) =>
               a.title.localeCompare(b.title),
+            );
+            break;
+          case "nameDesc":
+            sortedNotes = [...notesInList].sort((a, b) =>
+              b.title.localeCompare(a.title),
             );
             break;
           case "position":

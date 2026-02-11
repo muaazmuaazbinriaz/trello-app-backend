@@ -11,16 +11,19 @@ const noteInsert = async (req, res) => {
         .status(400)
         .json({ success: false, message: "listId is required" });
     }
+
     const list = await List.findById(listId);
     if (!list)
       return res
         .status(404)
         .json({ success: false, message: "List not found" });
+
     const board = await Board.findById(list.boardId);
     if (!board)
       return res
         .status(404)
         .json({ success: false, message: "Board not found" });
+
     const isAuthorized =
       board.ownerId.toString() === req.user._id.toString() ||
       board.members.includes(req.user._id);
@@ -29,19 +32,28 @@ const noteInsert = async (req, res) => {
         .status(403)
         .json({ success: false, message: "Not authorized to add notes" });
     }
+
     const count = await Note.countDocuments({ listId });
     const note = new Note({
       title,
-      listId: listId.toString(),
+      listId: listId,
       position: count,
       picture: req.file ? req.file.path : "",
       tags: tags || [],
     });
+
     const savedNote = await note.save();
-    req.app.io.to(board._id.toString()).emit("note-created", {
-      ...savedNote.toObject(),
-      listId: list._id.toString(),
-    });
+    const automationResult = await applyAutomation(
+      "new-entry",
+      savedNote,
+      req.app.io,
+    );
+    if (!automationResult.moved) {
+      req.app.io.to(board._id.toString()).emit("note-created", {
+        ...savedNote.toObject(),
+        listId: savedNote.listId.toString(),
+      });
+    }
     res
       .status(201)
       .json({ success: true, message: "Note added", data: savedNote });
@@ -131,6 +143,7 @@ const deleteNote = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 const updateNote = async (req, res) => {
   try {
     const { id } = req.params;
@@ -164,6 +177,7 @@ const updateNote = async (req, res) => {
     note.updatedAt = Date.now();
 
     const updatedNote = await note.save();
+
     let moved = false;
     if (tagsChanged) {
       const result = await applyAutomation(
@@ -185,6 +199,7 @@ const updateNote = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 const uploadImage = async (req, res) => {
   try {
     if (!req.file) return res.status(400).send("No file uploaded");

@@ -19,7 +19,7 @@ const automationSchema = new mongoose.Schema(
     },
     by: {
       type: String,
-      enum: ["createdAt", "name", "position"],
+      enum: ["createdAt", "name", "position", "createdAtDesc", "nameDesc"],
       default: "createdAt",
     },
     conditions: {
