@@ -7,6 +7,11 @@ const automationSchema = new mongoose.Schema(
       enum: ["new-entry", "tag-verified"],
       required: true,
     },
+    boardId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Board",
+      required: true,
+    },
     action: {
       type: String,
       enum: ["sortBy", "move"],

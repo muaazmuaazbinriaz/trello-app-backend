@@ -3,29 +3,34 @@ const listModel = require("../App/models/list.model");
 const Note = require("../App/models/notes.model");
 
 const applyAutomation = async (trigger, note, io) => {
-  try {
-    const rules = await AutomationRule.find({ trigger });
-    const originalListId = note.listId.toString();
+  let moved = false;
 
+  try {
+    const currentList = await listModel.findById(note.listId.toString());
+    if (!currentList) return { moved };
+    const rules = await AutomationRule.find({
+      trigger,
+      boardId: currentList.boardId,
+    });
+
+    const originalListId = note.listId.toString();
     for (const rule of rules) {
-      const requiredTag = rule.conditions.get("tag");
+      const requiredTag =
+        rule.conditions instanceof Map
+          ? rule.conditions.get("tag")
+          : rule.conditions?.tag;
+
       if (!requiredTag || !note.tags.includes(requiredTag)) continue;
+
       if (rule.action === "move") {
         const destinationList = await listModel.findOne({
-          title: rule.destination,
+          title: { $regex: new RegExp(`^${rule.destination}$`, "i") },
+          boardId: currentList.boardId,
         });
 
         if (!destinationList) continue;
-        const currentList = await listModel.findById(originalListId);
-        if (!currentList) continue;
-        if (
-          currentList.boardId.toString() !== destinationList.boardId.toString()
-        ) {
-          console.warn("Automation attempted to move note across boards");
-          continue;
-        }
-
         if (originalListId === destinationList._id.toString()) continue;
+
         const notesInDestination = await Note.countDocuments({
           listId: destinationList._id,
         });
@@ -34,17 +39,15 @@ const applyAutomation = async (trigger, note, io) => {
         note.listId = destinationList._id;
         note.position = notesInDestination;
         await note.save();
-
-        io.to(destinationList.boardId.toString()).emit("note-moved", {
+        moved = true;
+        io.to(currentList.boardId.toString()).emit("note-moved", {
           ...note.toObject(),
-          oldListId: oldListId,
+          oldListId,
           listId: note.listId.toString(),
         });
       }
 
       if (rule.action === "sortBy") {
-        const currentList = await listModel.findById(originalListId);
-        if (!currentList) continue;
         const notesInList = await Note.find({ listId: originalListId });
 
         let sortedNotes;
@@ -90,6 +93,8 @@ const applyAutomation = async (trigger, note, io) => {
   } catch (error) {
     console.error("Automation error:", error);
   }
+
+  return { moved };
 };
 
 module.exports = applyAutomation;

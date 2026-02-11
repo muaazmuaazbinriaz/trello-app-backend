@@ -131,47 +131,60 @@ const deleteNote = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 const updateNote = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, body, picture, tags } = req.body;
+
     const note = await Note.findById(id);
     if (!note)
       return res
         .status(404)
         .json({ success: false, message: "Note not found" });
+
     const list = await List.findById(note.listId);
     const board = await Board.findById(list.boardId);
+
     const isAuthorized =
       board.ownerId.toString() === req.user._id.toString() ||
       board.members.includes(req.user._id);
-    if (!isAuthorized) {
+
+    if (!isAuthorized)
       return res
         .status(403)
         .json({ success: false, message: "Not authorized to update note" });
-    }
+
     const tagsChanged =
       tags !== undefined && JSON.stringify(note.tags) !== JSON.stringify(tags);
+
     if (title !== undefined) note.title = title;
     if (body !== undefined) note.body = body;
     if (picture !== undefined) note.picture = picture;
     if (tags !== undefined) note.tags = tags;
     note.updatedAt = Date.now();
+
     const updatedNote = await note.save();
-    req.app.io.to(board._id.toString()).emit("note-updated", {
-      ...updatedNote.toObject(),
-      listId: list._id.toString(),
-    });
+    let moved = false;
     if (tagsChanged) {
-      await applyAutomation("tag-verified", updatedNote, req.app.io);
+      const result = await applyAutomation(
+        "tag-verified",
+        updatedNote,
+        req.app.io,
+      );
+      moved = result?.moved ?? false;
     }
+    if (!moved) {
+      req.app.io.to(board._id.toString()).emit("note-updated", {
+        ...updatedNote.toObject(),
+        listId: list._id.toString(),
+      });
+    }
+
     res.json({ success: true, message: "Note updated", data: updatedNote });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 const uploadImage = async (req, res) => {
   try {
     if (!req.file) return res.status(400).send("No file uploaded");
